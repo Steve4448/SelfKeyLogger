@@ -10,11 +10,11 @@ class KeyboardListener
 {
 	public:
 		KeyboardListener();
-		static LRESULT recordListener(int code, WPARAM wprm, LPARAM lprm);
+		static LRESULT CALLBACK recordListener(int code, WPARAM wprm, LPARAM lprm);
 		static QPlainTextEdit *up;
 		static Qt::KeyboardModifiers curModifiers;
 		static char getCharForVKCode(uint code, Qt::KeyboardModifiers modifier);
-        static QFile output;
+		static QFile output;
 		void setTextAddress(QPlainTextEdit *up);
 		HHOOK ahook;
 		BOOL destroy();
